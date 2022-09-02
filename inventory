@@ -1,0 +1,11 @@
+[cluster]
+kube-master
+kube-node1
+kube-node2
+
+[nodes]
+kube-node1
+kube-node2
+
+[master]
+kube-master
