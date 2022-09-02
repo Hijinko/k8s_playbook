@@ -1,0 +1,6 @@
+- hosts: master
+  strategy: free
+  become: yes
+  roles:
+  - containerd-setup
+
