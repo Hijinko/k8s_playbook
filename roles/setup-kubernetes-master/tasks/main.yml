@@ -1,0 +1,83 @@
+---
+- name: Initialize kubeadm
+  command: kubeadm init --pod-network-cidr={{ k8s_pod_cidr }} --cri-socket unix:///run/containerd/containerd.sock --apiserver-advertise-address={{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}
+  register: result
+  failed_when: 
+    - result.rc != 0
+    - "'already exists' not in result.stderr"
+  changed_when: false
+
+- name: Make kube home directory
+  file:
+    state: directory
+    path: /home/{{ k8s_user }}/.kube
+    owner: "{{ k8s_user }}"
+    group: "{{ k8s_group }}"
+
+- name: Copy kube config to home dir
+  copy:
+    remote_src: yes
+    src: /etc/kubernetes/admin.conf
+    dest: /home/{{ k8s_user }}/.kube/config
+    owner: "{{ k8s_user }}"
+    group: "{{ k8s_group }}"
+
+- name: Taint control plane
+  become: no
+  command: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+  register: cp_taint
+  changed_when: false
+  failed_when: "'The connection to the server localhost:8080 was refused' in cp_taint.stdout"
+
+- name: Taint master
+  become: no
+  command: kubectl taint nodes --all node-role.kubernetes.io/master-
+  register: master_taint
+  changed_when: false 
+  failed_when: "'The connection to the server localhost:8080 was refused' in master_taint.stdout"
+
+- name: Get tigra yaml
+  get_url:
+    url: https://projectcalico.docs.tigera.io/manifests/tigera-operator.yaml
+    dest: /tmp/tigra-operator.yaml
+  changed_when: false
+
+- name: Create tigra-operator
+  # TODO use the k8s module
+  become: no
+  command: kubectl create -f /tmp/tigra-operator.yaml
+  changed_when: false
+  failed_when: 
+    - result.rc != 0
+    - "'already exists' not in result.stderr"
+
+- name: Download custom resources
+  get_url:
+    url: https://projectcalico.docs.tigera.io/manifests/custom-resources.yaml       
+    dest: /tmp/custom-resources.yaml
+
+- name: Replace custom-resources cidr
+  replace:
+    regexp: "cidr: 192.168.0.0\/16"   
+    replace: "cidr: {{ k8s_pod_cidr }}"
+    path: /tmp/custom-resources.yaml
+
+- name: Create the custom-resource
+  # TODO use the k8s module
+  become: no 
+  command: kubectl create -f /tmp/custom-resources.yaml
+  changed_when: false
+  failed_when: 
+    - result.rc != 0
+    - "'already exists' not in result.stderr"
+
+- name: Get join command for the nodes
+  become: no
+  command: "kubeadm token create --print-join-command"
+  register: k8s_join
+
+- name: Add a host to hold the join command
+  # a host needs to be added in order to use the command on the nodes
+  add_host:
+    name: k8s_host
+    join: "{{ k8s_join.stdout }}"

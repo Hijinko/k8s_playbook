@@ -1,7 +1,35 @@
-- hosts: master
+# Install required packages on the cluster
+- hosts: cluster
   strategy: free
   become: yes
   roles:
-  - containerd-install
-  - kubernetes-install
+  - install-containerd
+  - install-kubernetes
 
+# Setup the master node
+- hosts: master
+  become: yes
+  roles:
+  - setup-kubernetes-master
+
+# Join the nodes in the cluster to the master
+- hosts: nodes
+  gather_facts:
+  become: yes
+  vars:
+    k8s_join: "{{ hostvars['k8s_host']['join'] }}"
+  tasks:
+  - name: Join the nodes to the master
+    command: "{{ k8s_join }}"
+    register: result
+    changed_when: false
+    failed_when:
+    - result.rc != 0
+    - "'already exists' not in result.stderr"
+
+# install some default containers to help manage kubernetes
+- hosts: master
+  become: yes
+  roles:
+  - install-helm
+  - install-openebs
