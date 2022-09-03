@@ -1,0 +1,65 @@
+---
+# tasks file for install-metallb
+- name: Install pip package
+  apt:
+    state: present
+    update_cache: yes
+    pkg:
+    - python3-pip
+
+- name: Install kubernetes python package
+  pip:
+    name: kubernetes
+    
+- name: Create metallb namespace
+  become: no 
+  kubernetes.core.k8s:
+    name: metallb
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Add metallb repo
+  become: no
+  kubernetes.core.helm_repository:
+    name: metallb
+    repo_url: https://metallb.github.io/metallb
+
+- name: Install metallb
+  become: no
+  kubernetes.core.helm:
+    name: metallb
+    chart_ref: "metallb/metallb"
+    release_namespace: metallb
+
+- name: Wait for metallb pods to run
+  become: no
+  shell: "kubectl wait --namespace=metallb --for=condition=Ready pods --timeout=600s --all"
+
+- name: Create metallb pool
+  become: no
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: main-pool
+        namespace: metallb
+      spec:
+        addresses:
+        - "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}/32"
+
+- name: Create custom resource
+  become: no
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: metallb-pool
+        namespace: metallb
+      spec:
+        ipAddressPools:
+        - main-pool

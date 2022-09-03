@@ -2,4 +2,4 @@
 - hosts: master
   become: yes
   roles:
-  - helm-install
+  - install-metallb
