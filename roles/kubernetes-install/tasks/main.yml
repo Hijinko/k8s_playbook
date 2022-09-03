@@ -1,0 +1,96 @@
+---
+# tasks file for kubernetes-install
+- name: Turn swap off
+  command: swapoff -a
+  changed_when: false
+
+- name: Disable swap in fstab
+  replace:
+    path: /etc/fstab
+    regexp: "^\/swap.img"
+
+- name: Edit k8s.conf
+  lineinfile:
+    path: /etc/modules-load.d/k8s.conf
+    create: yes
+    line: "{{ item }}"
+    state: present
+  loop:
+  - br_netfilter
+  - overlay
+
+- name: Modpobe overlay
+  command: modprobe overlay
+  changed_when: false
+
+- name: Modprobe br_netfilter
+  command: modprobe br_netfilter
+  changed_when: false
+
+- name: Set up sysctl params
+  lineinfile:
+    path: /etc/sysctl.d/k8s.conf
+    create: yes
+    line: "{{ item }}"
+    state: present
+  loop:
+  - "net.bridge.bridge-nf-call-iptables  = 1"
+  - "net.bridge.bridge-nf-call-ip6tables = 1"
+  - "net.ipv4.ip_forward                 = 1"
+
+# Apply sysctl params without reboot
+- name: Apply sysctl params without reboot
+  command: sysctl --system
+  changed_when: false
+
+- name: Install initial kubernetes packages
+  apt:
+    pkg:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    state: present
+
+- name: Create keyrings directory
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+
+- name: Get the kubernetes key
+  get_url:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    dest: /tmp/kubernets_key
+
+- name: Dearmor the kubernetes key
+  # only run the shell command because apt_key command is depreciated
+  shell: "gpg --dearmor < /tmp/kubernets_key > /etc/apt/keyrings/kubernetes.gpg"
+  changed_when: false
+
+- name: Add kubernetes official GPG key
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
+    state: present
+
+- name: Install kubernetes packages
+  apt:
+    state: present
+    update_cache: yes
+    pkg:
+    - kubeadm
+    - kubelet
+    - kubectl
+
+- name: Hold kubernets packages
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+  - kubeadm
+  - kubelet
+  - kubectl
+
+- name: Start and enable kubelet
+  service:
+    name: kubelet
+    enabled: yes
+    state: started
