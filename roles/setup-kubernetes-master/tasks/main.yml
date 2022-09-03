@@ -13,6 +13,7 @@
     path: /home/{{ k8s_user }}/.kube
     owner: "{{ k8s_user }}"
     group: "{{ k8s_group }}"
+    mode: 0600
 
 - name: Copy kube config to home dir
   copy:
@@ -71,6 +72,18 @@
     - result.rc != 0
     - "'already exists' not in result.stderr"
 
+- name: Install bash-complete
+  apt:
+    pkg:
+    - bash-completion
+    state: present
+
+- name: Install k8s autocompletion
+  lineinfile:
+    line: kubectl completion bash
+    path: /etc/bash_completion.d/kubectl
+    create: yes
+  
 - name: Get join command for the nodes
   become: no
   command: "kubeadm token create --print-join-command"

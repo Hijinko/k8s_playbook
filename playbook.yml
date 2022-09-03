@@ -34,3 +34,4 @@
   - install-helm
   - install-openebs
   - install-metallb
+  - install-ingress-nginx
