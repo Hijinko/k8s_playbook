@@ -2,5 +2,6 @@
   strategy: free
   become: yes
   roles:
-  - containerd-setup
+  - containerd-install
+  - kubernetes-install
 

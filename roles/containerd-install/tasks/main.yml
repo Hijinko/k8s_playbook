@@ -14,12 +14,12 @@
     path: /etc/apt/keyrings
     state: directory
 
-- name: Get the key
+- name: Get the docker key
   get_url:
     url: https://download.docker.com/linux/ubuntu/gpg
     dest: /tmp/docker_key
 
-- name: Dearmor the key
+- name: Dearmor the docker key
   # only run the shell command because apt_key command is depreciated
   shell: "gpg --dearmor < /tmp/docker_key > /etc/apt/keyrings/docker.gpg"
   changed_when: false
