@@ -1,0 +1,33 @@
+---
+# tasks file for install-openebs
+- name: Install pip package
+  apt:
+    state: present
+    update_cache: yes
+    pkg:
+    - python3-pip
+
+- name: Install kubernetes python package
+  pip:
+    name: kubernetes
+    
+- name: Create openebs namespace
+  become: no 
+  kubernetes.core.k8s:
+    name: openebs
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Add openebs repo
+  become: no
+  kubernetes.core.helm_repository:
+    name: openebs
+    repo_url: https://openebs.github.io/charts
+
+- name: Install openebs
+  become: no
+  kubernetes.core.helm:
+    name: openebs
+    chart_ref: openebs/openebs
+    release_namespace: openebs

@@ -1,11 +1,24 @@
-[cluster]
-kube-master
-kube-node1
-kube-node2
+[master:vars]
+# user that will run the pods
+k8s_user=root
 
-[nodes]
-kube-node1
-kube-node2
+# group that will run the pods normally same as user
+k8s_group=root
+
+# address and cidr of the pod network ensure this network does not already exist in your environment
+k8s_pod_cidr=10.100.0.0/16
 
 [master]
+# replace with the hostname or address of the master node
 kube-master
+
+[nodes]
+# replace with the hostname or address of multiple nodes
+# remove nodes and leave blank for a standalone server
+kube-node1
+kube-node2
+
+[cluster:children]
+master
+nodes
+
