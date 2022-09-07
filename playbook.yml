@@ -34,4 +34,4 @@
   - install-openebs
   - install-metallb
   - install-ingress-nginx
-  - install-hello-world
+  - install-harbor
