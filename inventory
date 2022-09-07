@@ -8,6 +8,13 @@ k8s_group=root
 # address and cidr of the pod network ensure this network does not already exist in your environment
 k8s_pod_cidr=10.100.0.0/16
 
+# ports for the ingress controller to listen on
+ingress_http_port=30080
+ingress_ssl_port=30443
+
+# domain for the services to run
+my_domain=domain.local
+
 [master]
 # replace with the hostname or address of the master node
 kube-master

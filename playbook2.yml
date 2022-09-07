@@ -1,6 +1,0 @@
-# Join the nodes in the cluster to the master
-- hosts: master
-  become: yes
-  roles:
-  - install-metallb
-  - install-ingress-nginx

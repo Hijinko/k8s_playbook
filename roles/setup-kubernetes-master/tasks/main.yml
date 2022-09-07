@@ -1,6 +1,6 @@
 ---
 - name: Initialize kubeadm
-  command: kubeadm init --pod-network-cidr={{ k8s_pod_cidr }} --cri-socket unix:///run/containerd/containerd.sock --apiserver-advertise-address={{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}
+  shell: kubeadm init --pod-network-cidr={{ k8s_pod_cidr }} --cri-socket unix:///run/containerd/containerd.sock --apiserver-advertise-address={{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}
   register: result
   failed_when: 
     - result.rc != 0
@@ -13,7 +13,6 @@
     path: /home/{{ k8s_user }}/.kube
     owner: "{{ k8s_user }}"
     group: "{{ k8s_group }}"
-    mode: 0600
 
 - name: Copy kube config to home dir
   copy:
@@ -22,6 +21,7 @@
     dest: /home/{{ k8s_user }}/.kube/config
     owner: "{{ k8s_user }}"
     group: "{{ k8s_group }}"
+    mode: 0600
 
 - name: Taint control plane
   become: no
@@ -37,6 +37,28 @@
   changed_when: false 
   failed_when: "'The connection to the server localhost:8080 was refused' in master_taint.stdout"
 
+- name: Install bash-complete and pip3
+  apt:
+    pkg:
+    - bash-completion
+    - python3-pip # pip3 only needed for ansible to create k8s object
+    state: present
+
+- name: Get kubernetes command
+  command: kubectl completion bash
+  register: result
+  changed_when: false
+
+- name: Install k8s autocompletion
+  lineinfile:
+    line: "{{ result.stdout }}"
+    path: /etc/bash_completion.d/kubectl
+    create: yes
+ 
+- name: Install kubernetes python package
+  pip:
+    name: kubernetes # needed for ansible to create k8s objects
+
 - name: Get tigra yaml
   get_url:
     url: https://projectcalico.docs.tigera.io/manifests/tigera-operator.yaml
@@ -44,13 +66,10 @@
   changed_when: false
 
 - name: Create tigra-operator
-  # TODO use the k8s module
   become: no
-  command: kubectl create -f /tmp/tigra-operator.yaml
-  changed_when: false
-  failed_when: 
-    - result.rc != 0
-    - "'already exists' not in result.stderr"
+  kubernetes.core.k8s:
+    state: present
+    src: /tmp/tigra-operator.yaml
 
 - name: Download custom resources
   get_url:
@@ -64,26 +83,11 @@
     path: /tmp/custom-resources.yaml
 
 - name: Create the custom-resource
-  # TODO use the k8s module
-  become: no 
-  command: kubectl create -f /tmp/custom-resources.yaml
-  changed_when: false
-  failed_when: 
-    - result.rc != 0
-    - "'already exists' not in result.stderr"
-
-- name: Install bash-complete
-  apt:
-    pkg:
-    - bash-completion
+  become: no
+  kubernetes.core.k8s:
     state: present
+    src: /tmp/custom-resources.yaml
 
-- name: Install k8s autocompletion
-  lineinfile:
-    line: kubectl completion bash
-    path: /etc/bash_completion.d/kubectl
-    create: yes
-  
 - name: Get join command for the nodes
   become: no
   command: "kubeadm token create --print-join-command"

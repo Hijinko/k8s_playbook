@@ -1,37 +1,23 @@
 ---
 # tasks file for install-ingress-nginx
-- name: Install pip package
-  apt:
-    state: present
-    update_cache: yes
-    pkg:
-    - python3-pip
-
-- name: Install kubernetes python package
-  pip:
-    name: kubernetes
-    
-- name: Create ingress-nginx namespace
-  become: no 
-  kubernetes.core.k8s:
-    name: ingress-nginx 
-    api_version: v1
-    kind: Namespace
-    state: present
-
 - name: Add ingress-nginx repo
-  become: no
   kubernetes.core.helm_repository:
     name: ingress-nginx
     repo_url: https://kubernetes.github.io/ingress-nginx
 
 - name: Install ingress-nginx
-  become: no
   kubernetes.core.helm:
+    create_namespace: true
+    namespace: ingress-nginx
     name: ingress-nginx
     chart_ref: "ingress-nginx/ingress-nginx"
-    release_namespace: ingress-nginx
     values:
-      hostNetwork: true
-      hostPort:
-        enabled: true
+      controller:
+        service:
+          nodePorts:
+            http: "{{ ingress_http_port }}"
+            https: "{{ ingress_ssl_port }}"
+
+- name: Wait for ingress pods to be running 
+  shell: "kubectl wait --for=condition=Ready --timeout=600s --all pods -n ingress-nginx"
+

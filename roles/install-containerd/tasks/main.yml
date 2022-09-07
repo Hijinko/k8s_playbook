@@ -64,7 +64,7 @@
   replace:
     path: /etc/containerd/config.toml
     regexp: '^disabled_plugins = \["cri"\]'
-    replace: '# disabled_plugins = ["cri"]'
+    replace: 'disabled_plugins = []'
 
 - name: Enable and start containerd
   service:
