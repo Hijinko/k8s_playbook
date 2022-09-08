@@ -1,5 +1,11 @@
 # K8s_playbook
 
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/Hijinko/k8s_playbook)
+![GitHub repo size](https://img.shields.io/github/repo-size/Hijinko/k8s_playbook)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/Hijinko/k8s_playbook)
+![GitHub contributors](https://img.shields.io/github/contributors/Hijinko/k8s_playbook)
+
+
 k8s_playbook is an Ansible playbook that allows developers to easily set up a kubernetes cluster and install common needed tools for administration and development.
 
 Additional line of information text about what the project does. Your introduction should be around 2 or 3 sentences. Don't go overboard, people won't read it.
