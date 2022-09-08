@@ -26,6 +26,7 @@ kube-node1
 kube-node2
 
 [cluster:children]
+# do not edit the cluster
 master
 nodes
 
