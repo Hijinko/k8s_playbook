@@ -1,0 +1,37 @@
+---
+# tasks file for install-helm
+- name: Create keyrings directory
+  become: yes
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+
+- name: Get the helm key
+  get_url:
+    url: https://baltocdn.com/helm/signing.asc
+    dest: /tmp/helm_key
+
+- name: Dearmor the helm key
+  # only run the shell command because apt_key command is depreciated
+  become: yes
+  shell: "gpg --dearmor < /tmp/helm_key > /etc/apt/keyrings/helm.gpg"
+  changed_when: false
+
+- name: Add helm official GPG key
+  become: yes
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main"
+    state: present
+
+- name: Install helm package
+  become: yes
+  apt:
+    state: present
+    update_cache: yes
+    pkg:
+    - helm
+
+- name: Install helm-diff
+  kubernetes.core.helm_plugin:
+    plugin_path: https://github.com/databus23/helm-diff
+    state: present

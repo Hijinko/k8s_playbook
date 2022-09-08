@@ -1,0 +1,14 @@
+---
+# tasks file for install-openebs
+- name: Add openebs repo
+  kubernetes.core.helm_repository:
+    name: openebs
+    repo_url: https://openebs.github.io/charts
+
+- name: Install openebs
+  kubernetes.core.helm:
+    wait: yes
+    create_namespace: true
+    name: openebs
+    chart_ref: openebs/openebs
+    namespace: openebs

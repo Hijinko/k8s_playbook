@@ -1,0 +1,40 @@
+---
+# tasks file for install-harbor
+- name: Add harbor repo to helm
+  kubernetes.core.helm_repository:
+    name: harbor
+    repo_url: https://helm.goharbor.io
+
+- name: Install harbor chart
+  kubernetes.core.helm:
+    create_namespace: yes
+    namespace: harbor
+    name: harbor
+    chart_ref: "harbor/harbor"
+    values:
+      expose:
+        tls:
+          enabled: false
+        ingress:
+          className: "nginx"
+          hosts:
+            core: harbor.{{ my_domain }}
+            notary: notary.{{ my_domain }}
+      externalURL: "https://harbor.{{ my_domain }}"
+      persistence:
+        persistentVolumeClaim:
+          registry:
+            storageClass: "openebs-hostpath"
+          chartmuseum:
+            storageClass: "openebs-hostpath"
+          jobservice:
+            jobLog:
+              storageClass: "openebs-hostpath"
+            scanDataExports:
+              storageClass: "openebs-hostpath"
+          database:
+            storageClass: "openebs-hostpath"
+          redis:
+            storageClass: "openebs-hostpath"
+          trivy:
+            storageClass: "openebs-hostpath"
