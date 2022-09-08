@@ -25,7 +25,7 @@ ssh-keygen
 ssh-copy-id joe@master-node
 ```
 
-Ansible conroller edit the inventory file with the correct information in the variables k8s_user and k8s_group and the groups  master and nodes.
+Ansible conroller edit the inventory file with the correct information in the variables k8s_user and k8s_group and the groups  master and nodes. Also update the my_domain variable to give your services the proper domain or else you will need to manually update the value later using kubectl edit.
 Note: If running k8s on a single machine remove the hosts under nodes and update the host under master
 
 ## Using k8s_playbook
